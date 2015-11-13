@@ -1,0 +1,225 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0,minimum-scale=1.0,maximum-scale=1.0,user-scalable=no"/>
+<title>canvas draw</title>
+<style>
+    *{margin:0;padding:0;}
+    .draw-board{margin:3%;border:1px solid #ccc;box-shadow:5px 5px 5px #666;font-size:14px;overflow:hidden;}
+    .tool{margin-left:-2px;padding:5px 0;}
+    .tool button{padding:3px 3px;border:1px solid #666;border-left-color:#ddd;border-top-color:#ddd;border-radius:3px;outline:none;background: #fff;}
+    .tool span{border-left:2px dotted #666;padding-left:8px;padding-right:2px;}
+    .tool .selected{border-left-color:#666;border-top-color:#666;border-right-color:#ddd;border-bottom-color:#ddd;}
+    .canvas{display:block;margin:5px auto ;}
+</style>
+</head>
+
+<body>
+
+<div class="draw-board">
+    <div class="tool">
+        <span class="border">
+            粗细
+            <select name="" class="draw-width">
+                <option value="2">2</option>
+                <option value="4">4</option>
+                <option value="6">6</option>
+                <option value="8">8</option>
+                <option value="10">10</option>
+            </select>
+        </span>
+        <span class="color">
+            颜色
+            <select name="" class="draw-color">
+                <option value="#000000">黑色</option>
+                <option value="#333399">蓝色</option>
+                <option value="#66CC33">绿色</option>
+                <option value="#FF0000">红色</option>
+                <option value="#9933CC">紫色</option>
+                <option value="#FF6600">橙色</option>
+            </select>
+        </span>
+        <span class="eraser">
+            <input type="checkbox" class="eraser-check"> 擦除
+            <select name="" class="eraser-width">
+                <option value="20">20</option>
+                <option value="40">40</option>
+                <option value="60">60</option>
+                <option value="80">80</option>
+                <option value="100">100</option>
+            </select>
+            <button class="draw-clear">清空</button>
+        </span>  
+    </div>
+    <div>
+        <canvas class="canvas"  width="500" height="355" >你的浏览器不支持canvas！</canvas>
+    </div>
+     
+</div> 
+
+<script>
+    function brush(){  
+        var d = document,
+            screenW = d.documentElement.clientWidth,
+            drawBoard = d.querySelector(".draw-board"),
+            eraser = d.querySelector(".eraser-check"),
+            canvas = d.querySelector(".canvas"),
+            eraserWidth = d.querySelector(".eraser-width"),
+            drawWidth = d.querySelector(".draw-width"),
+            drawColor = d.querySelector(".draw-color"),
+            drawClear = d.querySelector(".draw-clear"),
+            ctx = canvas.getContext("2d"),
+            hasTouch = "ontouchstart" in window ? true : false,
+            startEventType = hasTouch ? "touchstart" : "mousedown",
+            moveEventType = hasTouch ? "touchmove" : "mousemove",
+            endEventType = hasTouch ? "touchend" : "mouseup",
+            isClear = false,
+            backgroundContext = d.createElement('canvas').getContext('2d'),
+            pos = {},   
+            nowEraserWidth = 0;
+
+
+        canvas.width = drawBoard.offsetWidth - 10;  
+        canvas.height = 400;  
+        var canvasWidth = canvas.width,
+            canvasHeight = canvas.height;    
+
+        function setDrawAttr(drawW , drawC){
+            ctx.lineWidth = drawW ; 
+            ctx.strokeStyle = drawC;
+        }  
+        ctx.lineCap = "round";
+        ctx.lineJoin = "round"; 
+        ctx.globalCompositeOperation = "source-over";
+
+
+        eraser.onclick = function(){
+            if(!this.checked){
+               ctx.globalCompositeOperation = "source-over";
+            }
+            isClear = !isClear;
+        }
+
+        drawClear.onclick = function(){
+            confirm("did you want clear all of the canvas？") && ctx.clearRect(0 , 0 , canvasWidth , canvasHeight);
+        }
+
+        function setPathForEraser(pos,eraserWidth) {
+           ctx.beginPath();
+           ctx.moveTo(pos.startX, pos.startY);
+           ctx.arc(pos.startX, pos.startY,eraserWidth + 1,0, Math.PI*2, false);
+           ctx.closePath();
+        }
+
+        function drawEraser(pos,eraserWidth) { // 设置橡皮擦形状
+            ctx.save();
+
+            ctx.lineWidth = 2;
+            ctx.strokeStyle = "#000";
+
+            ctx.beginPath();
+            ctx.arc(pos.eraserX, pos.eraserY, eraserWidth, 0, Math.PI*2, false);
+            ctx.clip();
+            ctx.stroke();
+
+            ctx.restore();
+        }
+
+        function eraseLast(pos,eraserWidth) {
+            var x = pos.startX - eraserWidth, 
+                y = pos.startY - eraserWidth,
+                w = eraserWidth*2+1*2,
+                h = w,
+                cw = canvas.width,
+                ch = canvas.height;
+
+            ctx.save(); 
+
+            setPathForEraser(pos,eraserWidth);
+            ctx.clip();
+
+            if (x + w > cw) w = cw - x;
+            if (y + h > ch) h = ch - y;
+            if (x < 0) { x = 0; }
+            if (y < 0) { y = 0; }
+
+            ctx.drawImage(backgroundContext.canvas, x, y, w, h, x, y, w, h);
+
+            ctx.restore();
+        }
+
+        function drawBackground() {
+            backgroundContext.canvas.width = canvas.width;
+            backgroundContext.canvas.height = canvas.height;
+            drawGrid(backgroundContext);
+        }
+
+        function drawGrid(context) {
+            context.save();
+            context.fillStyle = "#ffffff";
+            context.fillRect(0, 0, context.canvas.width, context.canvas.height);
+            context.restore();
+        }
+
+        drawBackground();
+
+        var nowPos = function(e){
+            return {
+                x : hasTouch ? (e.targetTouches[0].pageX - canvas.offsetLeft) : (e.clientX - canvas.offsetLeft),
+                y : hasTouch ? (e.targetTouches[0].pageY - canvas.offsetTop) : (e.clientY - canvas.offsetTop)
+            }
+        };
+
+        canvas.addEventListener( startEventType , function(e){
+            pos.startX = nowPos(e).x;
+            pos.startY = nowPos(e).y;
+            
+            setDrawAttr(drawWidth.value , drawColor.value );
+
+            nowEraserWidth = eraserWidth.value/1 || 20;
+
+            canvas.addEventListener( moveEventType , moveFn , false);
+            canvas.addEventListener( endEventType , endFn , false);
+
+            function moveFn(e){
+                pos.endX = nowPos(e).x;
+                pos.endY = nowPos(e).y;
+
+                if(isClear){
+                    pos.eraserX = pos.endX;
+                    pos.eraserY = pos.endY;
+
+                    eraseLast(pos,nowEraserWidth);
+                    drawEraser(pos,nowEraserWidth);
+
+                } 
+                else{
+                    ctx.beginPath();
+                    ctx.moveTo(pos.startX , pos.startY);
+                    ctx.lineTo(pos.endX , pos.endY);
+                    ctx.stroke();
+                    ctx.closePath();
+                }  
+
+                pos.startX = pos.endX;
+                pos.startY = pos.endY;
+            }
+
+            function endFn(e){
+                canvas.removeEventListener( moveEventType , moveFn , false);
+                canvas.removeEventListener( endEventType , endFn , false);
+                isClear && eraseLast(pos,nowEraserWidth);
+            }
+                
+            e.preventDefault();
+        } , false);
+
+    }  
+    brush();
+</script>
+
+</body>
+</html>
+
+

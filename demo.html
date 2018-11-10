@@ -1,0 +1,155 @@
+<!DOCTYPE html>
+<html lang="zh-cn">
+
+<head>
+  <meta charset="UTF-8">
+  <title>首页</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0,user-scalable=0" />
+  <meta name="format-detection" content="telephone=no">
+
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+    }
+
+    /* .draw-board {
+      margin: 3%;
+      border: 1px solid #ccc;
+      box-shadow: 5px 5px 5px #666;
+      font-size: 14px;
+      overflow: hidden;
+    } */
+
+    .tool {
+      margin-left: -2px;
+      padding: 5px 0;
+      user-select: none;
+    }
+
+    .tool button {
+      padding: 3px 3px;
+      border: 1px solid #666;
+      border-left-color: #ddd;
+      border-top-color: #ddd;
+      border-radius: 3px;
+      outline: none;
+      background: #fff;
+    }
+
+    .tool span {
+      border-left: 2px dotted #666;
+      padding-left: 8px;
+      padding-right: 2px;
+    }
+
+    .tool .selected {
+      border-left-color: #666;
+      border-top-color: #666;
+      border-right-color: #ddd;
+      border-bottom-color: #ddd;
+    }
+
+    .canvas {
+      display: block;
+      margin: 5px auto;
+      border: 1px solid #000;
+    }
+  </style>
+</head>
+
+<body>
+
+  <div class="draw-board">
+    <div class="tool">
+      <span class="border">
+        粗细
+        <select name="" class="draw-width">
+          <option value="2">2</option>
+          <option value="4">4</option>
+          <option value="6">6</option>
+          <option value="8">8</option>
+          <option value="10">10</option>
+        </select>
+      </span>
+      <span class="color">
+        颜色
+        <select name="" class="draw-color">
+          <option value="#000000">黑色</option>
+          <option value="#333399">蓝色</option>
+          <option value="#66CC33">绿色</option>
+          <option value="#FF0000">红色</option>
+          <option value="#9933CC">紫色</option>
+          <option value="#FF6600">橙色</option>
+        </select>
+      </span>
+      <span class="eraser">
+        <input type="checkbox" class="eraser-check"> 擦除
+        <select name="" class="eraser-width">
+          <option value="20">20</option>
+          <option value="40">40</option>
+          <option value="60">60</option>
+          <option value="80">80</option>
+          <option value="100">100</option>
+        </select>
+      </span>
+    </div>
+  </div>
+
+  <p>已有canvas转化为画布</p>
+
+  <div>
+    <canvas id="canvas" width="300" height="300" style="border: 1px solid #191919"></canvas>
+  </div>
+
+  <p>新创建canvas并转化为画布</p>
+
+  <script src="draw.js"></script>
+
+  <script>
+    // 处理 offset 的问题
+    // 设置工具条
+    // 线的颜色和粗细能否为函数返回
+    // 转换图片的方法
+
+    new Draw({
+      // container: document.getElementById(('container'), 
+      // offsetLeft: 0,
+      // offsetTop: 0,
+      canvas: document.getElementById('canvas'), // 指定直接用，为指定，则创建一个
+      // canvasWidth: 300, // 默认 300， sizeFit 为 false 时才可应用
+      // canvasHeight: 300, // 默认 300，sizeFit 为 false 时才可应用
+      // sizeFit: false, // 默认 true
+      border: '1px solid #000',
+      // backgroundImage: 'home.png', // backgroundImage 与 backgroundColor 不可同时生效。当两者同时存在时，backgroundImage 将覆盖 backgroundColor
+      // backgroundColor: 'red',
+      toolbar: false, // true
+      erasing: function () {
+        return document.querySelectorAll('.eraser-check')[0].checked;
+      },
+      lineWidth: function () {
+        return document.querySelectorAll('.draw-width')[0].value;
+        // return 10;
+      },
+      lineColor: function () {
+        return document.querySelectorAll('.draw-color')[0].value;
+      }
+    });
+
+    new Draw({
+      backgroundImage: 'home.png',
+      erasing: function () {
+        return document.querySelectorAll('.eraser-check')[0].checked;
+      },
+      lineWidth: function () {
+        return document.querySelectorAll('.draw-width')[0].value;
+        // return 10;
+      },
+      lineColor: function () {
+        return document.querySelectorAll('.draw-color')[0].value;
+      }
+    });
+  </script>
+</body>
+
+</html>

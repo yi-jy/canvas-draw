@@ -7,10 +7,14 @@
 
   var pos = {};
 
+  var eraser = {
+    radius: 20,
+    borderWidth: 2,
+    borderColor: '#000'
+  };
+
   var defaults = {
     container: doc.body,
-    offsetLeft: 0,
-    offsetTop: 0,
     canvasWidth: 300,
     canvasHeight: 300,
     sizeFit: true,
@@ -18,7 +22,7 @@
     backgroundColor: '#fff',
     toolbar: false,
     erasing: false,
-    lineWidth: 2,
+    lineWidth: 1,
     lineColor: '#000'
   };
 
@@ -34,13 +38,43 @@
     return target;
   }
 
+  function detectStringToFunction(name, config) {
+    var configAttr = config[name];
+
+    if (typeof configAttr !== 'function') {
+      config[name] = function () {
+        return configAttr;
+      };
+    }
+  }
+
   function createElement(tagName) {
     return doc.createElement(tagName);
+  }
+
+  function convertCanvasToImg(canvas, callback) {
+    var img = new Image();
+
+    img.addEventListener('load', function () {
+      callback(img);
+    })
+
+    img.src = canvas.toDataURL('image/png', .5);
+  }
+
+  function getElementEventPos(element, eventX, eventY) {
+    var elementRect = element.getBoundingClientRect();
+
+    return {
+      x: eventX - elementRect.left * (element.width / elementRect.width),
+      y: eventY - elementRect.top * (element.height / elementRect.height)
+    };
   }
 
   function Draw(config) {
 
     this.config = extend(config || {}, defaults);
+    this.initConfig();
 
     // offscreen Canvas
     this.offscreenCanvas = createElement('canvas');
@@ -48,13 +82,16 @@
     // draw canvas
     this.canvas = config.canvas;
     this.initCanvas();
-
-    // events
-    // config.eraserBtn.addEventListener('click', this.switchEraserStatus.bind(this));
   }
 
+  Draw.prototype.initConfig = function () {
+    detectStringToFunction.bind(this, 'erasing', this.config)();
+    detectStringToFunction.bind(this, 'lineWidth', this.config)();
+    detectStringToFunction.bind(this, 'lineColor', this.config)();
+  };
+
   Draw.prototype.initCanvas = function (callback) {
-    // Create a default canvas and insert it into the document
+    // if no canvas is specified, then create a default canvas and insert it into the document
     if (!this.canvas) {
       this.canvas = createElement('canvas');
       this.config.container.appendChild(this.canvas);
@@ -70,6 +107,7 @@
 
       if (this.config.backgroundImage) {
         this.canvas.style.backgroundImage = 'url(' + this.config.backgroundImage + ')';
+        this.canvas.style.backgroundRepeat = 'no-repeat';
       }
 
       // offscreen Canvas 
@@ -77,6 +115,7 @@
 
       // events
       this.canvas.addEventListener(startEventType, this.paintStart.bind(this));
+      this.canvas.addEventListener('contextmenu', this.disabledContextmenu);
     }.bind(this));
   };
 
@@ -138,11 +177,12 @@
     pos.startX = this.getPos(event).x;
     pos.startY = this.getPos(event).y;
 
-    // set Eraser size
-    nowEraserWidth = 20;
-
-    // Set the size and thickness of the brush
+    // set the size and thickness of the brush
     this.setPaintAttr(this.config.lineWidth(), this.config.lineColor());
+
+    if (!this.config.lineWidth() || !this.config.lineColor()) {
+      throw new Error('If you specify the lineWidth or lineColor, you must give it a default value')
+    }
 
     this.movingHandler = this.paintMoving.bind(this);
     this.endHandler = this.paintEnd.bind(this);
@@ -162,8 +202,8 @@
       pos.eraserX = pos.endX;
       pos.eraserY = pos.endY;
 
-      this.clearEraser(pos, nowEraserWidth);
-      this.drawEraser(pos, nowEraserWidth);
+      this.clearEraser(pos, eraser);
+      this.drawEraser(pos, eraser);
     } else {
       this.canvasCtx.beginPath();
       this.canvasCtx.moveTo(pos.startX, pos.startY);
@@ -181,7 +221,7 @@
   Draw.prototype.paintEnd = function () {
     this.canvas.removeEventListener(moveEventType, this.movingHandler);
     doc.removeEventListener(endEventType, this.endHandler);
-    this.config.erasing() && this.clearEraser(pos, nowEraserWidth);
+    this.config.erasing() && this.clearEraser(pos, eraser);
   };
 
   Draw.prototype.repaint = function () {
@@ -189,43 +229,45 @@
       this.canvasCtx.clearRect(0, 0, this.canvas.width, this.canvas.width);
   };
 
-  Draw.prototype.drawEraser = function (pos, eraserWidth) {
-    // restore the eraser border width and color
-    this.setPaintAttr(2, '#000');
-
+  Draw.prototype.drawEraser = function (pos, eraser) {
     this.canvasCtx.save();
+
+    // restore the eraser border width and color
+    this.setPaintAttr(eraser.borderWidth, eraser.borderColor);
+
     this.canvasCtx.beginPath();
-    this.canvasCtx.arc(pos.eraserX, pos.eraserY, eraserWidth, 0, Math.PI * 2, false);
+    this.canvasCtx.arc(pos.eraserX, pos.eraserY, eraser.radius, 0, Math.PI * 2, false);
+
     this.canvasCtx.clip();
     this.canvasCtx.stroke();
     this.canvasCtx.restore();
   };
 
-  Draw.prototype.setEraserPath = function (pos, eraserWidth) {
+  Draw.prototype.setEraserPath = function (pos, eraser) {
     this.canvasCtx.beginPath();
     this.canvasCtx.moveTo(pos.startX, pos.startY);
-    this.canvasCtx.arc(pos.startX, pos.startY, eraserWidth + 1, 0, Math.PI * 2, false);
+    this.canvasCtx.arc(pos.startX, pos.startY, eraser.radius + eraser.borderWidth, 0, Math.PI * 2, false);
     this.canvasCtx.closePath();
   };
 
-  Draw.prototype.clearEraser = function (pos, eraserWidth) {
-    var x = pos.startX - eraserWidth,
-      y = pos.startY - eraserWidth,
-      w = eraserWidth * 2 + 1 * 2,
+  Draw.prototype.clearEraser = function (pos, eraser) {
+    var x = pos.startX - eraser.radius,
+      y = pos.startY - eraser.radius,
+      w = eraser.radius * 2 + eraser.borderWidth * 2,
       h = w,
       canvasWidth = this.canvas.width,
       canvasHeight = this.canvas.height;
 
     this.canvasCtx.save();
 
-    this.setEraserPath(pos, eraserWidth);
+    this.setEraserPath(pos, eraser);
 
     this.canvasCtx.clip();
 
     if (x + w > canvasWidth) w = canvasWidth - x;
     if (y + h > canvasHeight) h = canvasHeight - y;
-    if (x < 0) { x = 0; }
-    if (y < 0) { y = 0; }
+    if (x < 0) x = 0;
+    if (y < 0) y = 0;
 
     this.canvasCtx.drawImage(this.offscreenCanvas, x, y, w, h, x, y, w, h);
 
@@ -236,15 +278,33 @@
     this.config.erasing = !this.config.erasing;
   };
 
+  Draw.prototype.disabledContextmenu = function (event) {
+    event.preventDefault();
+  };
+
+  Draw.prototype.convertImg = function () {
+    var backgroundImg = new Image();
+
+    backgroundImg.addEventListener('load', function () {
+      this.canvasCtx.drawImage(backgroundImg, 0, 0);
+    }.bind(this));
+
+    backgroundImg.src = this.config.backgroundImage;
+
+    convertCanvasToImg(this.canvas, function (paintImg) {
+      this.canvasCtx.drawImage(paintImg, 0, 0);
+    }.bind(this));
+  };
+
   Draw.prototype.getPos = function (event) {
+    var eventX = hasTouch ? event.touches[0].clientX : event.clientX;
+    var eventY = hasTouch ? event.touches[0].clientY : event.clientY;
+    var elementEventPos = getElementEventPos(this.canvas, eventX, eventY);
+
     return {
-      x: hasTouch
-        ? (event.targetTouches[0].pageX - this.canvas.offsetLeft)
-        : (event.clientX - this.canvas.offsetLeft),
-      y: hasTouch
-        ? (event.targetTouches[0].pageY - this.canvas.offsetTop)
-        : (event.clientY - this.canvas.offsetTop)
-    }
+      x: Math.floor(elementEventPos.x),
+      y: Math.floor(elementEventPos.y)
+    };
   }
 
   root.Draw = Draw;

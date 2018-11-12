@@ -102,7 +102,7 @@
     <canvas id="canvas" width="300" height="300" style="border: 1px solid #191919"></canvas>
   </div>
 
-  <p>新创建canvas并转化为画布</p>
+  <p>新创建canvas并转化为画布 <button class="transfer">合成图片</button></p>
 
   <script src="draw.js"></script>
 
@@ -112,10 +112,8 @@
     // 线的颜色和粗细能否为函数返回
     // 转换图片的方法
 
-    new Draw({
+    var draw1 = new Draw({
       // container: document.getElementById(('container'), 
-      // offsetLeft: 0,
-      // offsetTop: 0,
       canvas: document.getElementById('canvas'), // 指定直接用，为指定，则创建一个
       // canvasWidth: 300, // 默认 300， sizeFit 为 false 时才可应用
       // canvasHeight: 300, // 默认 300，sizeFit 为 false 时才可应用
@@ -129,26 +127,40 @@
       },
       lineWidth: function () {
         return document.querySelectorAll('.draw-width')[0].value;
-        // return 10;
       },
       lineColor: function () {
         return document.querySelectorAll('.draw-color')[0].value;
       }
     });
 
-    new Draw({
+    var draw2 = new Draw({
       backgroundImage: 'home.png',
       erasing: function () {
         return document.querySelectorAll('.eraser-check')[0].checked;
       },
       lineWidth: function () {
         return document.querySelectorAll('.draw-width')[0].value;
-        // return 10;
       },
       lineColor: function () {
         return document.querySelectorAll('.draw-color')[0].value;
       }
     });
+
+    document.querySelector('.transfer').addEventListener('click', function () {
+      draw2.convertImg();
+
+      setTimeout(function () {
+        document.body.appendChild(convertCanvasToImg(draw2.canvas));
+      }, 500);
+    })
+
+    function convertCanvasToImg(canvas) {
+      var img = new Image();
+
+      img.src = canvas.toDataURL('image/png', .5);
+
+      return img;
+    }
   </script>
 </body>
 

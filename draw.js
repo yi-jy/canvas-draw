@@ -56,7 +56,7 @@
     var img = new Image();
 
     img.addEventListener('load', function () {
-      callback(img);
+      typeof callback === 'function' && callback(img);
     })
 
     img.src = canvas.toDataURL('image/png', .5);

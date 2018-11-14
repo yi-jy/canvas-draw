@@ -1,18 +1,18 @@
 # canvas-draw
 
-A Sketchpad based on canvas(Refactoring...), You can see an live demo [here](http://joy-yi0905.github.io/canvas-draw/demo.html).
+A draw board base on canvas(Refactoring...), You can see an live demo [here](http://joy-yi0905.github.io/canvas-draw/demo.html).
 
 ## Usage
 
 Include the JavaScript library into the page:
 
-```
+```js
 <script src="draw.js"></script>
 ```
 
 Then create an instance of the `Draw`:
 
-```
+```js
 new Draw({
   container: document.getElementById('container'), // container of the canvas
   canvas: document.getElementById('canvas'), // canvas, if not specified, create a new canvas

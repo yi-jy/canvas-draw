@@ -52,6 +52,10 @@
     return doc.createElement(tagName);
   }
 
+  function convertCanvasToBase64(canvas) {
+    return canvas.toDataURL('image/png', .5);
+  }
+
   function convertCanvasToImg(canvas, callback) {
     var img = new Image();
 
@@ -59,7 +63,7 @@
       typeof callback === 'function' && callback(img);
     })
 
-    img.src = canvas.toDataURL('image/png', .5);
+    img.src = convertCanvasToBase64(canvas);
   }
 
   function getElementEventPos(element, eventX, eventY) {
@@ -282,7 +286,7 @@
     event.preventDefault();
   };
 
-  Draw.prototype.convertImg = function () {
+  Draw.prototype.convertImg = function (callback) {
     var backgroundImg = new Image();
 
     backgroundImg.addEventListener('load', function () {
@@ -294,6 +298,10 @@
     convertCanvasToImg(this.canvas, function (paintImg) {
       this.canvasCtx.drawImage(paintImg, 0, 0);
     }.bind(this));
+
+    setTimeout(function () {
+      typeof callback === 'function' && callback(convertCanvasToBase64(this.canvas));
+    }.bind(this), 500);
   };
 
   Draw.prototype.getPos = function (event) {

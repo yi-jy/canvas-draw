@@ -24,7 +24,7 @@
       background: #fff;
     }
 
-    .tool span {
+    .tool span:not(:first-child) {
       border-left: 2px dotted #666;
       padding-left: 8px;
       padding-right: 2px;
@@ -101,44 +101,38 @@
       // backgroundColor: 'red',
       toolbar: false, // true
       erasing: function () {
-        return document.querySelectorAll('.eraser-check')[0].checked;
+        return document.querySelector('.eraser-check').checked;
       },
       lineWidth: function () {
-        return document.querySelectorAll('.draw-width')[0].value;
+        return document.querySelector('.draw-width').value;
       },
       lineColor: function () {
-        return document.querySelectorAll('.draw-color')[0].value;
+        return document.querySelector('.draw-color').value;
       }
     });
 
     var draw2 = new Draw({
       backgroundImage: 'home.png',
       erasing: function () {
-        return document.querySelectorAll('.eraser-check')[0].checked;
+        return document.querySelector('.eraser-check').checked;
       },
       lineWidth: function () {
-        return document.querySelectorAll('.draw-width')[0].value;
+        return document.querySelector('.draw-width').value;
       },
       lineColor: function () {
-        return document.querySelectorAll('.draw-color')[0].value;
+        return document.querySelector('.draw-color').value;
       }
     });
 
     document.querySelector('.transfer').addEventListener('click', function () {
-      draw2.convertImg();
+      draw2.convertImg(function (base64) {
+        var img = new Image();
 
-      setTimeout(function () {
-        document.body.appendChild(convertCanvasToImg(draw2.canvas));
-      }, 500);
+        img.src = base64;
+
+        document.body.appendChild(img);
+      });
     })
-
-    function convertCanvasToImg(canvas) {
-      var img = new Image();
-
-      img.src = canvas.toDataURL('image/png', .5);
-
-      return img;
-    }
   </script>
 </body>
 

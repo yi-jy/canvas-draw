@@ -301,7 +301,7 @@
 
     setTimeout(function () {
       typeof callback === 'function' && callback(convertCanvasToBase64(this.canvas));
-    }.bind(this), 500);
+    }.bind(this), 0);
   };
 
   Draw.prototype.getPos = function (event) {

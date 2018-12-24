@@ -1,4 +1,4 @@
-; (function (root, doc) {
+﻿; (function (root, doc) {
 
   var hasTouch = 'ontouchstart' in window ? true : false;
   var startEventType = hasTouch ? 'touchstart' : 'mousedown';
@@ -112,10 +112,11 @@
       if (this.config.backgroundImage) {
         this.canvas.style.backgroundImage = 'url(' + this.config.backgroundImage + ')';
         this.canvas.style.backgroundRepeat = 'no-repeat';
+        this.canvas.style.backgroundSize = '100% 100%';
       }
 
       // offscreen Canvas 
-      this.drawOffscreenCanvas();
+      this.drawOffscreenCanvas(this.canvas);
 
       // events
       this.canvas.addEventListener(startEventType, this.paintStart.bind(this));
@@ -146,7 +147,7 @@
     }
   };
 
-  Draw.prototype.drawOffscreenCanvas = function () {
+  Draw.prototype.drawOffscreenCanvas = function (canvas) {
     var offscreenCanvasCtx = this.offscreenCanvas.getContext('2d');
 
     var img = new Image();
@@ -164,7 +165,7 @@
     // Set the background image when erasure some region(if any)
     if (this.config.backgroundImage) {
       img.addEventListener('load', function () {
-        offscreenCanvasCtx.drawImage(img, 0, 0);
+        offscreenCanvasCtx.drawImage(img, 0, 0, canvas.width, canvas.height);
       });
 
       img.src = this.config.backgroundImage;
@@ -290,7 +291,7 @@
     var backgroundImg = new Image();
 
     backgroundImg.addEventListener('load', function () {
-      this.canvasCtx.drawImage(backgroundImg, 0, 0);
+      this.canvasCtx.drawImage(backgroundImg, 0, 0, this.canvas.width, this.canvas.height);
     }.bind(this));
 
     backgroundImg.src = this.config.backgroundImage;
@@ -301,7 +302,7 @@
 
     setTimeout(function () {
       typeof callback === 'function' && callback(convertCanvasToBase64(this.canvas));
-    }.bind(this), 0);
+    }.bind(this), 500);
   };
 
   Draw.prototype.getPos = function (event) {

@@ -125,12 +125,17 @@
     });
 
     document.querySelector('.transfer').addEventListener('click', function () {
-      draw2.convertImg(function (base64) {
-        var img = new Image();
+      draw2.convertImg({
+        success: function(base64) {
+          var img = new Image();
 
-        img.src = base64;
+          img.src = base64;
 
-        document.body.appendChild(img);
+          document.body.appendChild(img);
+        },
+        error: function() {
+          console.log('error');
+        }
       });
     })
   </script>

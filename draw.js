@@ -52,18 +52,23 @@
     return doc.createElement(tagName);
   }
 
-  function convertCanvasToBase64(canvas) {
-    return canvas.toDataURL('image/png', .5);
+  function convertCanvasToBase64(canvas, errorCallback) {
+    try {
+      return canvas.toDataURL('image/png', .5);
+    } catch(e) {
+      typeof errorCallback === 'function' && errorCallback();
+      throw Error('Pictures and current page must be in the same domain');
+    }
   }
 
-  function convertCanvasToImg(canvas, callback) {
+  function convertCanvasToImg(canvas, callback, errorCallback) {
     var img = new Image();
 
     img.addEventListener('load', function () {
       typeof callback === 'function' && callback(img);
     })
 
-    img.src = convertCanvasToBase64(canvas);
+    img.src = convertCanvasToBase64(canvas, errorCallback);
   }
 
   function getElementEventPos(element, eventX, eventY) {
@@ -287,7 +292,10 @@
     event.preventDefault();
   };
 
-  Draw.prototype.convertImg = function (callback) {
+  Draw.prototype.convertImg = function (params) {
+    var compositeImg = '';
+
+    // background image
     var backgroundImg = new Image();
 
     backgroundImg.addEventListener('load', function () {
@@ -296,12 +304,16 @@
 
     backgroundImg.src = this.config.backgroundImage;
 
+    // paint image
     convertCanvasToImg(this.canvas, function (paintImg) {
       this.canvasCtx.drawImage(paintImg, 0, 0);
-    }.bind(this));
+    }.bind(this), params.error);
 
+    // composite image
     setTimeout(function () {
-      typeof callback === 'function' && callback(convertCanvasToBase64(this.canvas));
+      compositeImg = convertCanvasToBase64(this.canvas, params.error);
+
+      typeof params.success === 'function' && params.success(compositeImg);
     }.bind(this), 500);
   };
 
